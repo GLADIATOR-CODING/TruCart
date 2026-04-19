@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Sparkles } from 'lucide-react';
-import { migrateOnboardingToFavorites } from '../data/mockDatabase';
+import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext';
+import { updateUserProfile } from '../services/firestore';
+import { ONBOARDING_MAP } from '../data/mockDatabase';
 
 const ONBOARDING_RESTAURANTS = [
   { id: 'ob1', name: 'Burger King', emoji: '🍔', color: 'bg-orange-400' },
@@ -29,6 +32,9 @@ const ONBOARDING_RESTAURANTS = [
 export default function Onboarding({ onComplete }) {
   const [selected, setSelected] = useState(new Set());
   const [step, setStep] = useState(0); // 0 = welcome, 1 = picker
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { addFavorite } = useFavorites();
 
   const toggle = (id) => {
     const next = new Set(selected);
@@ -36,10 +42,28 @@ export default function Onboarding({ onComplete }) {
     setSelected(next);
   };
 
-  const handleFinish = () => {
-    localStorage.setItem('trucart_onboarded', 'true');
-    migrateOnboardingToFavorites([...selected]);
-    onComplete();
+  const handleFinish = async () => {
+    setLoading(true);
+    try {
+      // Convert onboarding picks to actual restaurant IDs and save to Firestore
+      const picks = [...selected];
+      for (const obId of picks) {
+        const dbId = ONBOARDING_MAP[obId];
+        if (dbId) await addFavorite(dbId);
+      }
+
+      // Mark onboarding complete in Firestore
+      if (user) {
+        await updateUserProfile(user.uid, { onboardingComplete: true });
+      }
+
+      onComplete();
+    } catch (err) {
+      console.error('Onboarding failed:', err);
+      onComplete(); // still continue even on error
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -114,7 +138,6 @@ export default function Onboarding({ onComplete }) {
                     <span className="text-2xl">{r.emoji}</span>
                     <span className="text-xs font-bold text-center leading-tight" style={{ color: 'var(--fg-muted)' }}>{r.name}</span>
                     
-                    {/* Checkmark */}
                     <AnimatePresence>
                       {isSelected && (
                         <motion.div
@@ -128,7 +151,6 @@ export default function Onboarding({ onComplete }) {
                       )}
                     </AnimatePresence>
 
-                    {/* Soft color tint when selected */}
                     <div
                       className={`absolute inset-0 rounded-2xl ${r.color}`}
                       style={{ opacity: isSelected ? 0.08 : 0, transition: 'opacity 0.3s ease' }}
@@ -144,9 +166,10 @@ export default function Onboarding({ onComplete }) {
               </span>
               <button
                 onClick={handleFinish}
+                disabled={loading}
                 className="bg-brand text-white px-8 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] shadow-md shadow-brand/15 inline-flex items-center gap-2 hover:bg-brand-dark disabled:opacity-40"
               >
-                {selected.size > 0 ? "Let's go!" : 'Skip for now'} <ChevronRight className="w-4 h-4" />
+                {loading ? 'Saving...' : selected.size > 0 ? "Let's go!" : 'Skip for now'} <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </motion.div>

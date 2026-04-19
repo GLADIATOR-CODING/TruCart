@@ -1,10 +1,24 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import Home from './pages/Home';
-import SearchPage from './pages/SearchPage';
-import RestaurantPage from './pages/RestaurantPage';
-import Onboarding from './pages/Onboarding';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { FavoritesProvider } from './context/FavoritesContext';
+import { SubscriptionsProvider } from './context/SubscriptionsContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoadingSkeleton from './components/LoadingSkeleton';
+import { getUserProfile } from './services/firestore';
+
+// Lazy-loaded pages for code splitting (React.lazy + Suspense)
+const Home = lazy(() => import('./pages/Home'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const RestaurantPage = lazy(() => import('./pages/RestaurantPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -20,28 +34,69 @@ function AnimatedRoutes() {
         className="min-h-screen"
         style={{ background: 'var(--bg)' }}
       >
-        <Routes location={location}>
-          <Route path="/" element={<Home />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/restaurant/:id" element={<RestaurantPage />} />
-        </Routes>
+        <Suspense fallback={<LoadingSkeleton />}>
+          <Routes location={location}>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Protected Routes */}
+            <Route path="/" element={<ProtectedRoute><AppWithOnboarding><Home /></AppWithOnboarding></ProtectedRoute>} />
+            <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+            <Route path="/restaurant/:id" element={<ProtectedRoute><RestaurantPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
 }
 
-export default function App() {
-  const [isOnboarded, setIsOnboarded] = useState(
-    () => localStorage.getItem('trucart_onboarded') === 'true'
-  );
+/**
+ * Wrapper that checks onboarding status from Firestore.
+ * Shows onboarding for first-time users, then the main app.
+ */
+function AppWithOnboarding({ children }) {
+  const { user } = useAuth();
+  const [onboarded, setOnboarded] = useState(null); // null = loading
 
-  if (!isOnboarded) {
-    return <Onboarding onComplete={() => setIsOnboarded(true)} />;
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const profile = await getUserProfile(user.uid);
+        setOnboarded(profile?.onboardingComplete ?? false);
+      } catch {
+        setOnboarded(true); // fail open
+      }
+    })();
+  }, [user]);
+
+  if (onboarded === null) return <LoadingSkeleton />;
+
+  if (!onboarded) {
+    return <Onboarding onComplete={() => setOnboarded(true)} />;
   }
 
+  return children;
+}
+
+export default function App() {
   return (
-    <Router>
-      <AnimatedRoutes />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <FavoritesProvider>
+            <SubscriptionsProvider>
+              <AnimatedRoutes />
+            </SubscriptionsProvider>
+          </FavoritesProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }

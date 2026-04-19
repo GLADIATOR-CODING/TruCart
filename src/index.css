@@ -114,3 +114,19 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+
+/* ========== SKELETON LOADER ========== */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.15; }
+}
+.skeleton-pulse {
+  background: rgba(0, 0, 0, 0.08);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ========== FOCUS RING FOR FORMS ========== */
+input:focus-visible {
+  outline: none;
+}
+

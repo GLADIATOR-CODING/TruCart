@@ -85,51 +85,20 @@ export const ONBOARDING_MAP = {
   ob16: 's2', ob17: 'p5', ob18: 'c4', ob19: 's4', ob20: 'c5',
 };
 
-// === FAVORITES SYSTEM (stores actual restaurant IDs) ===
-function _getFavIds() {
-  try {
-    const raw = localStorage.getItem('trucart_fav_ids');
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function _saveFavIds(ids) {
-  localStorage.setItem('trucart_fav_ids', JSON.stringify(ids));
-}
-
-export function getFavoriteRestaurants() {
-  const ids = _getFavIds();
-  return RESTAURANTS.filter(r => ids.includes(r.id));
-}
-
-export function isFavorite(restaurantId) {
-  return _getFavIds().includes(restaurantId);
-}
-
-export function addFavorite(restaurantId) {
-  const ids = _getFavIds();
-  if (!ids.includes(restaurantId)) {
-    ids.push(restaurantId);
-    _saveFavIds(ids);
-  }
-}
-
-export function removeFavorite(restaurantId) {
-  const ids = _getFavIds().filter(id => id !== restaurantId);
-  _saveFavIds(ids);
-}
-
-// Convert onboarding selections to restaurant-ID-based favorites
-export function migrateOnboardingToFavorites(obIds) {
-  const dbIds = obIds.map(obId => ONBOARDING_MAP[obId]).filter(Boolean);
-  const existing = _getFavIds();
-  const merged = [...new Set([...existing, ...dbIds])];
-  _saveFavIds(merged);
-}
+// Favorites are now managed by FavoritesContext + Firestore
+// See: src/context/FavoritesContext.jsx and src/services/firestore.js
 
 // Price generation
 function generatePrices(baseItemPrice) {
   const platforms = [PLATFORMS.ZOMATO, PLATFORMS.SWIGGY, PLATFORMS.MAGICPIN, PLATFORMS.DIGIHAAT];
+  
+  // ~28% chance for Zomato or Swiggy to have a massive coupon
+  const hasCoupon = Math.random() < 0.28;
+  const couponPlatform = Math.random() < 0.5 ? 'zomato' : 'swiggy';
+  const couponNames = ['TRYNEW', 'TASTY', 'CRAVINGS', 'BINGE', 'FESTIVE'];
+  const couponCode = couponNames[Math.floor(Math.random() * couponNames.length)];
+  const discountAmount = Math.floor(baseItemPrice * 0.35); // 35% off to ensure they win
+
   return platforms.map(plat => {
     let modifier = 0;
     if (plat.id === 'magicpin') modifier = -20;
@@ -137,8 +106,14 @@ function generatePrices(baseItemPrice) {
     if (plat.id === 'digihaat') modifier = -15;
     if (plat.id === 'zomato') modifier = 10;
 
+    let appliedCoupon = null;
+    if (hasCoupon && plat.id === couponPlatform) {
+      modifier -= discountAmount;
+      appliedCoupon = { code: couponCode, discount: discountAmount };
+    }
+
     const noise = Math.floor(Math.random() * 15) - 5;
-    const finalItemPrice = Math.max(50, baseItemPrice + modifier + noise);
+    const finalItemPrice = Math.max(29, baseItemPrice + modifier + noise);
     const deliveryFee = plat.id === 'digihaat' ? 15 : Math.floor(Math.random() * 30) + 30;
     const taxes = Math.floor(finalItemPrice * 0.05);
     const platformFee = plat.id === 'magicpin' || plat.id === 'digihaat' ? 2 : Math.floor(Math.random() * 5) + 3;
@@ -146,6 +121,7 @@ function generatePrices(baseItemPrice) {
     return {
       platform: plat,
       itemPrice: finalItemPrice, deliveryFee, taxes, platformFee,
+      coupon: appliedCoupon,
       total: finalItemPrice + deliveryFee + taxes + platformFee
     };
   }).sort((a, b) => a.total - b.total);
