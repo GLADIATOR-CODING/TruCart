@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { getUserProfile, updateUserProfile } from '../services/firestore';
 
@@ -83,7 +83,7 @@ export function SubscriptionsProvider({ children }) {
     }).sort((a, b) => a.total - b.total);
   }, [hasSub]);
 
-  const value = { activeSubs, toggleSub, hasSub, applyDiscounts, loading };
+  const value = useMemo(() => ({ activeSubs, toggleSub, hasSub, applyDiscounts, loading }), [activeSubs, toggleSub, hasSub, applyDiscounts, loading]);
 
   return (
     <SubscriptionsContext.Provider value={value}>

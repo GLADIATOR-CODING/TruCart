@@ -126,15 +126,15 @@ export default function Home() {
             </h2>
             <p className="text-sm mt-0.5" style={{ color: 'var(--fg-muted)' }}>What are you craving today?</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-4 sm:mt-0">
             {/* Savings Dashboard */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="glass-tile px-4 py-2 rounded-xl flex items-center gap-3"
+              className="glass-tile px-4 py-2 rounded-xl flex items-center gap-3 shrink-0"
             >
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-4 h-4 text-brand" />
               </div>
               <div>
@@ -149,24 +149,26 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.35 }}
               onClick={() => setIsSubModalOpen(true)}
-              className="glass-tile w-12 h-12 rounded-xl flex items-center justify-center hover:bg-black/[0.03] transition-colors group"
+              className="glass-tile w-12 h-12 rounded-xl flex items-center justify-center hover:bg-black transition-colors group shrink-0"
               title="Your Memberships"
+              aria-label="Manage Memberships"
             >
               <Crown className="w-5 h-5 text-brand group-hover:scale-110 transition-transform" />
             </motion.button>
 
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--fg-faint)' }}>
+            <div className="flex items-center gap-2 text-sm shrink-0" style={{ color: 'var(--fg-faint)' }}>
               {isDetecting ? (
                 <Navigation className="w-4 h-4 text-brand animate-spin" />
               ) : (
-                <MapPin className="w-4 h-4 text-brand cursor-pointer" onClick={detectLocation} />
+                <MapPin className="w-4 h-4 text-brand cursor-pointer" onClick={detectLocation} aria-label="Detect Location" role="button" tabIndex={0} />
               )}
               <input
                 type="text"
                 value={location}
                 onChange={e => setLocation(e.target.value)}
-                className="bg-transparent outline-none text-sm font-medium"
-                style={{ color: 'var(--fg-muted)', width: '120px' }}
+                aria-label="Location"
+                className="bg-transparent outline-none text-sm font-medium w-24 sm:w-32"
+                style={{ color: 'var(--fg-muted)' }}
               />
             </div>
           </div>
@@ -265,7 +267,8 @@ export default function Home() {
 
       {/* Hero Tile Grid */}
       <div className="flex-1 px-6 md:px-12 pb-8 pt-2 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 md:gap-4">
+        {/* Desktop Grid */}
+        <div className="hidden sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
           {HERO_TILES.map((tile, i) => (
             <TiltTile
               key={tile.id}
@@ -275,13 +278,29 @@ export default function Home() {
             />
           ))}
         </div>
+        
+        {/* Mobile Horizontal Scroll Grid */}
+        <div 
+          className="grid sm:hidden grid-rows-2 grid-flow-col gap-3 overflow-x-auto pb-4 snap-x" 
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
+          {HERO_TILES.map((tile, i) => (
+            <div className="w-[105px] snap-start shrink-0" key={`mobile-${tile.id}`}>
+              <TiltTile
+                tile={tile}
+                delay={0.15 + i * 0.03}
+                onClick={() => navigate(`/search?q=${encodeURIComponent(tile.query)}`)}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Bottom Stats Bar */}
       <div className="px-6 md:px-12 pb-6 max-w-7xl mx-auto w-full">
-        <div className="glass-tile rounded-xl px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-brand" />
+        <div className="glass-tile rounded-xl px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2">
+            <Users className="w-4 h-4 text-brand shrink-0" />
             <span className="text-xs font-medium" style={{ color: 'var(--fg-muted)' }}>
               <strong className="text-brand">2,847</strong> users comparing prices right now
             </span>

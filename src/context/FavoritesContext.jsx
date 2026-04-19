@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import {
   addUserFavorite,
@@ -68,14 +68,14 @@ export function FavoritesProvider({ children }) {
   // Get full restaurant objects for favorite IDs
   const favoriteRestaurants = RESTAURANTS.filter(r => favoriteIds.includes(r.id));
 
-  const value = {
+  const value = useMemo(() => ({
     favoriteIds,
     favoriteRestaurants,
     loading,
     addFavorite,
     removeFavorite,
     isFavorite,
-  };
+  }), [favoriteIds, favoriteRestaurants, loading, addFavorite, removeFavorite, isFavorite]);
 
   return (
     <FavoritesContext.Provider value={value}>

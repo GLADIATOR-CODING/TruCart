@@ -3,15 +3,19 @@ import { motion } from 'framer-motion';
 import { User, Mail, MapPin, Calendar, Save, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, updateUserProfile } from '../services/firestore';
+import { getUserProfile, updateUserProfile, deleteUserAccount } from '../services/firestore';
+import { useToast } from '../components/Toast';
+import { deleteUser } from 'firebase/auth';
 
 export default function Profile() {
   const { user, refreshProfile } = useAuth();
+  const { showToast } = useToast();
   const [displayName, setDisplayName] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [createdAt, setCreatedAt] = useState(null);
 
   // Load profile from Firestore
@@ -47,11 +51,29 @@ export default function Profile() {
       });
       await refreshProfile();
       setSaved(true);
+      showToast('Profile updated successfully', 'success');
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error('Failed to update profile:', err);
+      showToast('Failed to update profile', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirm = window.confirm("Are you sure you want to completely delete your account? This action cannot be undone.");
+    if (!confirm || !user) return;
+    
+    setDeleting(true);
+    try {
+      await deleteUserAccount(user.uid);
+      await deleteUser(user);
+      showToast('Account deleted successfully', 'success');
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+      showToast(err.message || 'Failed to delete account. You may need to sign in again first.', 'error');
+      setDeleting(false);
     }
   };
 
@@ -171,6 +193,20 @@ export default function Profile() {
                     <><Save className="w-4 h-4" /> Save changes</>
                   )}
                 </button>
+
+                {/* Danger Zone */}
+                <div className="pt-8 mt-8 border-t border-red-500/10">
+                  <h3 className="text-sm font-bold text-red-500 mb-2">Danger Zone</h3>
+                  <p className="text-xs text-red-400 mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 border border-red-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {deleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting account...</> : 'Delete Account'}
+                  </button>
+                </div>
               </form>
             </>
           )}

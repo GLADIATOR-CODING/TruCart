@@ -101,3 +101,12 @@ export async function clearComparisonHistory(uid) {
   const deletes = snap.docs.map(d => deleteDoc(d.ref));
   await Promise.all(deletes);
 }
+
+/** Delete full user account */
+export async function deleteUserAccount(uid) {
+  await clearComparisonHistory(uid);
+  const favSnap = await getDocs(collection(db, 'users', uid, 'favorites'));
+  const favDeletes = favSnap.docs.map(d => deleteDoc(d.ref));
+  await Promise.all(favDeletes);
+  await deleteDoc(doc(db, 'users', uid));
+}

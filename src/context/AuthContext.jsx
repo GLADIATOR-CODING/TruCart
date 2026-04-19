@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     userProfile,
     loading,
@@ -112,7 +112,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     logout,
     refreshProfile,
-  };
+  }), [user, userProfile, loading, signup, login, loginWithGoogle, logout, refreshProfile]);
 
   return (
     <AuthContext.Provider value={value}>

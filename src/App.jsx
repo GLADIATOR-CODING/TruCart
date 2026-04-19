@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { SubscriptionsProvider } from './context/SubscriptionsContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { getUserProfile } from './services/firestore';
@@ -88,15 +89,17 @@ function AppWithOnboarding({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <FavoritesProvider>
-            <SubscriptionsProvider>
-              <AnimatedRoutes />
-            </SubscriptionsProvider>
-          </FavoritesProvider>
-        </AuthProvider>
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
+            <FavoritesProvider>
+              <SubscriptionsProvider>
+                <AnimatedRoutes />
+              </SubscriptionsProvider>
+            </FavoritesProvider>
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }
