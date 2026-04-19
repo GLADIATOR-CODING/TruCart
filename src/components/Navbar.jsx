@@ -46,7 +46,8 @@ export default function Navbar() {
     <nav className="glass-tile sticky top-0 z-50 rounded-none border-x-0 border-t-0" style={{ borderRadius: 0 }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex items-center justify-between h-14">
         {/* Logo */}
-        <button onClick={() => navigate('/')} className="flex items-center gap-1 group">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
+          <img src="/trucart-logo.svg" alt="TruCart Logo" className="w-7 h-7 transition-transform group-hover:scale-105" />
           <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--fg)' }}>
             Tru<span className="text-brand">Cart</span>
           </h1>
