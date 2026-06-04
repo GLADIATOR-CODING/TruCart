@@ -35,6 +35,6 @@
   "overrides": {
     "react-router": "^7.13.2",
     "picomatch": "^4.0.4",
-    "protobufjs": "8.0.2"
+    "protobufjs": "8.2.0"
   }
 }
